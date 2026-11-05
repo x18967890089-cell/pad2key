@@ -49,7 +49,7 @@ self-test finished, no keys were injected
 ### 3. 挂到游戏上
 
 ```powershell
-# 按进程名（名字后面带不带 .exe 都行）
+# 按进程名（名字后面带不带 .exe 都行；把 flashplayer_21_sa 换成你自己的游戏进程名）
 .\pad2key.ps1 -GameName flashplayer_21_sa
 
 # 或按 PID —— 启动器拉起游戏时最可靠
@@ -57,10 +57,21 @@ $game = Start-Process .\game.exe -PassThru
 .\pad2key.ps1 -GamePid $game.Id
 ```
 
+不知道进程名：游戏开着的时候跑 `Get-Process | Where-Object MainWindowTitle | Select-Object Id,ProcessName,MainWindowTitle`。
+
 `-GamePid` 和 `-GameName` 都不给会直接报错退出（不会去猜进程名）。
 游戏退出后脚本自己结束；中途拔手柄会自动松开所有按键，插回来自动重连。
 
 日志写在脚本同目录的 `pad2key.log`。
+
+### 4. 按键没反应时按顺序查
+
+1. **游戏窗口是不是在前台**——默认只在前台注入，Alt-Tab 出去会自动松开所有键，这是设计不是 bug。
+2. **权限要对齐**——游戏用管理员权限跑的，脚本也必须用管理员权限跑，否则按键被 UIPI 拦掉（表现是自检正常、游戏里毫无反应）。
+3. **自检里的 `joysticks` 是 0**——SDL2 没认出设备：换 USB 口 / 有线连接重试，装好手柄官方驱动，或换更新的 SDL2 版本。
+4. **自检能列出手柄、游戏里还是没反应**——目标游戏多半用 Raw Input 或带反作弊，`keybd_event` 送进去的键它不认，这种情况目前无解。
+
+四条都排完还是不行，带上 `-SelfTest` 的完整输出开 issue。
 
 ## 键位配置
 

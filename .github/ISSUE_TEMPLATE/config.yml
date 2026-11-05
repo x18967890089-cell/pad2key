@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 还没装 SDL2.dll
+    url: https://libsdl.org
+    about: pad2key 不自带 SDL2.dll，需要自己下载 Windows 发行包里的 x64 版本，放在脚本同目录。

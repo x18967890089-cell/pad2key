@@ -1,0 +1,90 @@
+name: 手柄没反应 / Controller not working
+description: 自检看得到手柄，但游戏里没按键；或者自检里根本认不到手柄。
+title: "[手柄] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **先跑一遍自检，把输出整段贴进来**（不需要游戏，也不需要插着手柄）：
+
+        ```powershell
+        powershell -NoProfile -ExecutionPolicy Bypass -File .\pad2key.ps1 -SelfTest
+        ```
+
+        没有这段输出，只能靠猜。
+
+  - type: input
+    id: controller
+    attributes:
+      label: 手柄型号
+      description: 品牌 + 型号，越具体越好
+      placeholder: Xbox Series X 手柄 / 8BitDo Pro 2 / DualShock 4
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: 连接方式
+      options:
+        - USB 有线
+        - 蓝牙
+        - 2.4G 接收器（非 Xbox 适配器）
+        - Xbox 无线适配器
+        - 其它 / 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows 版本
+      placeholder: Windows 11 24H2 (26100)
+    validations:
+      required: true
+
+  - type: input
+    id: game
+    attributes:
+      label: 游戏
+      description: 游戏名 + 版本；老 Flash 游戏请写一下用的播放器
+      placeholder: 混乱大枪战3（flashplayer_21_sa）
+    validations:
+      required: true
+
+  - type: textarea
+    id: selftest
+    attributes:
+      label: -SelfTest 输出
+      description: 完整贴进来，含 joysticks 计数与每个设备名
+      render: text
+      placeholder: |
+        pad2key self-test
+          PowerShell : 5.1.26100.8115 (64-bit)
+          ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 具体现象
+      description: 哪些键有反应、哪些没有；是完全没反应还是重复触发；游戏窗口当时在不在前台
+      placeholder: 摇杆左右正常，X 键跳没反应；窗口在前台；脚本和游戏都不是管理员
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: tried
+    attributes:
+      label: 已经试过的
+      options:
+        - label: 游戏窗口保持前台（没有 Alt-Tab 出去）
+        - label: 脚本与游戏权限一致（都管理员 / 都普通）
+        - label: 换过 USB 口或改成有线连接
+        - label: 换过 SDL2.dll 版本
+
+  - type: markdown
+    attributes:
+      value: |
+        脚本同目录的 `pad2key.log` 里有按键时序，能贴就贴。
