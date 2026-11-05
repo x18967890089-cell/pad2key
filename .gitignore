@@ -1,0 +1,15 @@
+# Runtime log written next to the script
+*.log
+
+# SDL2 runtime binary: users download their own copy (see README)
+*.dll
+
+# Local scratch
+tmp/
+scratch/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
