@@ -4,10 +4,9 @@
 
 > A single-file PowerShell bridge that turns gamepad buttons into key presses for games that only understand a keyboard.
 
-<p align="center"><i>[ 截图位 · 待补：<code>docs/screenshot.png</code> ]</i></p>
+<p align="center"><img src="docs/screenshot.png" alt="pad2key -SelfTest output: PowerShell 5.1 x64, SDL2 2.32.10, 0 joysticks, waiting for controller" width="720"></p>
 
-<!-- 补图步骤：真实截图存为 docs/screenshot.png，去掉下面一行的注释，并删掉上面那行占位。 -->
-<!-- ![pad2key running](docs/screenshot.png) -->
+`-SelfTest` 的真实输出：不插手柄也能跑，确认 PowerShell 位数、SDL2 版本与连接状态都正常。
 
 ---
 
