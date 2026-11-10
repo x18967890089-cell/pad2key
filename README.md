@@ -8,6 +8,10 @@
 
 `-SelfTest` 的真实输出：不插手柄也能跑，确认 PowerShell 位数、SDL2 版本与连接状态都正常。
 
+<p align="center"><img src="docs/gameplay.png" alt="Gun Mayhem 3 running under pad2key: left stick walks, X jumps, LB fires" width="720"></p>
+
+真机截图：《混乱大枪战3》（Adobe Flash Player 21）里用左摇杆走位、`X` 跳、`LB` 开火 —— 游戏本身只认键盘，中间没有任何插件或改包。
+
 ---
 
 ## 快速开始
@@ -71,6 +75,30 @@ $game = Start-Process .\game.exe -PassThru
 4. **自检能列出手柄、游戏里还是没反应**——目标游戏多半用 Raw Input 或带反作弊，`keybd_event` 送进去的键它不认，这种情况目前无解。
 
 四条都排完还是不行，带上 `-SelfTest` 的完整输出开 issue。
+
+## 在游戏里用（实测：《混乱大枪战3》）
+
+老 Flash 游戏是最典型的「只认键盘」场景，整套流程四步：
+
+```cmd
+:: 1) 先起桥接（后台最小化），按进程名挂上去
+start /min powershell -NoProfile -ExecutionPolicy Bypass -File pad2key.ps1 -GameName flashplayer_21_sa
+
+:: 2) 再起游戏（顺序很重要：桥接会等 90 秒找进程，先起游戏也行）
+start "" flashplayer_21_sa.exe Gun_Mayhem_3.swf
+
+:: 3) 把游戏进程优先级提到 High，Flash 掉帧时按键不会排队
+wmic process where "name='flashplayer_21_sa.exe'" CALL setpriority "128"
+```
+
+4. 点进游戏画面 → 左摇杆走位、`X` 跳、`A` 下蹲、`LB` 开火、`RB` 扔雷。
+
+几个实测细节：
+
+- **窗口标题不重要，进程名才重要**。Flash Player 的窗口标题是 `Adobe Flash Player 21`，进程名却是 `flashplayer_21_sa`，按 `-GameName` 挂要写进程名。
+- **点一下游戏画面再按手柄**。Flash 的焦点没进 SWF 时按键会落在播放器外壳上，表现为「摇杆没反应」。
+- **游戏切到后台就自动松开按键**，Alt-Tab 回来重新点一下画面即可。
+- 手柄没插时脚本照样跑，插上自动重连，不用重启游戏。
 
 ## 键位配置
 
