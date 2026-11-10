@@ -49,17 +49,47 @@ jobs:
           Write-Host "PSScriptAnalyzer: no errors"
 
   selftest:
-    name: -SelfTest really loads SDL2
+    name: -SelfTest with a real SDL2.dll
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: SDL2.dll must ship with the repo
+      - name: Without SDL2.dll the script must exit 3
         shell: powershell
         run: |
           $dll = Join-Path $PWD 'SDL2.dll'
-          if (-not (Test-Path $dll)) { Write-Host 'SDL2.dll is missing'; exit 1 }
-          Write-Host ("SDL2.dll: {0} bytes" -f (Get-Item $dll).Length)
+          if (Test-Path $dll) { Write-Host 'SDL2.dll should not be committed (see .gitignore)'; exit 1 }
+          $out = & powershell -NoProfile -ExecutionPolicy Bypass -File .\pad2key.ps1 -SelfTest 2>&1
+          $rc = $LASTEXITCODE
+          $out | ForEach-Object { Write-Host $_ }
+          if ($rc -ne 3) { Write-Host "expected exit 3 when SDL2.dll is absent, got $rc"; exit 1 }
+          Write-Host 'missing-dll exit code ok'
+          exit 0
+
+      - name: Install SDL2 the way the README tells users to
+        shell: powershell
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP 'sdl2.zip'
+          $urls = @(
+            'https://libsdl.org/release/SDL2-2.32.10-win32-x64.zip',
+            'https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10-win32-x64.zip'
+          )
+          $got = $false
+          foreach ($u in $urls) {
+            Write-Host "trying $u"
+            & curl.exe -fsSL --max-time 120 -o $zip $u
+            if ($LASTEXITCODE -eq 0 -and (Test-Path $zip) -and (Get-Item $zip).Length -gt 100000) { $got = $true; break }
+            Write-Host "  failed ($LASTEXITCODE)"
+          }
+          if (-not $got) { Write-Host 'could not download SDL2 in 120s'; exit 1 }
+          Write-Host ("downloaded {0} bytes" -f (Get-Item $zip).Length)
+          Expand-Archive -Path $zip -DestinationPath (Join-Path $env:RUNNER_TEMP 'sdl2') -Force
+          $dll = Get-ChildItem (Join-Path $env:RUNNER_TEMP 'sdl2') -Recurse -Filter SDL2.dll |
+                 Where-Object { $_.FullName -match 'x64' } | Select-Object -First 1
+          if (-not $dll) { Write-Host 'no x64 SDL2.dll inside the archive'; exit 1 }
+          Copy-Item $dll.FullName (Join-Path $PWD 'SDL2.dll') -Force
+          Write-Host ("SDL2.dll: {0} bytes" -f (Get-Item (Join-Path $PWD 'SDL2.dll')).Length)
+          exit 0
 
       - name: Run the self-test (no controller attached on a runner)
         shell: powershell
