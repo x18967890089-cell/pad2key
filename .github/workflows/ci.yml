@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: parse + ascii + PSScriptAnalyzer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax tree must have zero parse errors (Windows PowerShell 5.1)
+        shell: powershell
+        run: |
+          $errs = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "$PWD\pad2key.ps1", [ref]$null, [ref]$errs)
+          if ($errs -and $errs.Count -gt 0) {
+            $errs | ForEach-Object { Write-Host "PARSE ERROR: $($_.Message) at line $($_.Extent.StartLineNumber)" }
+            exit 1
+          }
+          Write-Host "parse ok: 0 errors"
+
+      - name: Script must stay pure ASCII
+        shell: powershell
+        run: |
+          $bytes = [System.IO.File]::ReadAllBytes("$PWD\pad2key.ps1")
+          $bad = ($bytes | Where-Object { $_ -gt 127 }).Count
+          if ($bad -gt 0) {
+            Write-Host "non-ascii bytes: $bad"
+            Write-Host "A no-BOM script is read as ANSI by Windows PowerShell 5.1 when double-clicked or run by a scheduler."
+            exit 1
+          }
+          Write-Host "ascii ok: 0 non-ascii bytes"
+
+      - name: PSScriptAnalyzer (errors only)
+        shell: powershell
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -AllowClobber
+          $issues = Invoke-ScriptAnalyzer -Path "$PWD\pad2key.ps1" -Severity Error
+          if ($issues) { $issues | Format-Table -AutoSize | Out-String | Write-Host; exit 1 }
+          Write-Host "PSScriptAnalyzer: no errors"
+
+  selftest:
+    name: -SelfTest really loads SDL2
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SDL2.dll must ship with the repo
+        shell: powershell
+        run: |
+          $dll = Join-Path $PWD 'SDL2.dll'
+          if (-not (Test-Path $dll)) { Write-Host 'SDL2.dll is missing'; exit 1 }
+          Write-Host ("SDL2.dll: {0} bytes" -f (Get-Item $dll).Length)
+
+      - name: Run the self-test (no controller attached on a runner)
+        shell: powershell
+        run: |
+          $out = & powershell -NoProfile -ExecutionPolicy Bypass -File .\pad2key.ps1 -SelfTest 2>&1
+          $rc = $LASTEXITCODE
+          $out | ForEach-Object { Write-Host $_ }
+          if ($rc -ne 0) { Write-Host "self-test exited $rc"; exit 1 }
+          $text = ($out | Out-String)
+          foreach ($needle in @('pad2key self-test', 'SDL2 build', 'joysticks', 'self-test finished, no keys were injected')) {
+            if ($text -notmatch [regex]::Escape($needle)) { Write-Host "missing output: $needle"; exit 1 }
+          }
+          Write-Host 'self-test ok'
+          exit 0
+
+      - name: No target game must exit 2
+        shell: powershell
+        run: |
+          $out = & powershell -NoProfile -ExecutionPolicy Bypass -File .\pad2key.ps1 2>&1
+          $rc = $LASTEXITCODE
+          $out | ForEach-Object { Write-Host $_ }
+          if ($rc -ne 2) { Write-Host "expected exit 2, got $rc"; exit 1 }
+          Write-Host 'usage exit code ok'
+          exit 0
