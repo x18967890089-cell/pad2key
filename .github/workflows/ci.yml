@@ -102,7 +102,7 @@ jobs:
           $out | ForEach-Object { Write-Host $_ }
           if ($rc -ne 0) { Write-Host "self-test exited $rc"; exit 1 }
           $text = ($out | Out-String)
-          foreach ($needle in @('pad2key self-test', 'SDL2 build', 'joysticks', 'self-test finished, no keys were injected')) {
+          foreach ($needle in @('pad2key self-test', 'SDL2 dir', 'joysticks', 'self-test finished, no keys were injected')) {
             if ($text -notmatch [regex]::Escape($needle)) { Write-Host "missing output: $needle"; exit 1 }
           }
           Write-Host 'self-test ok'
