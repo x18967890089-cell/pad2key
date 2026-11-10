@@ -10,9 +10,9 @@
 
 `-SelfTest` 的真实输出：不插手柄也能跑，确认 PowerShell 位数、SDL2 版本与连接状态都正常。
 
-<p align="center"><img src="docs/gameplay.png" alt="Gun Mayhem 3 running under pad2key: left stick walks, X jumps, LB fires" width="720"></p>
+<p align="center"><img src="docs/gameplay.gif" alt="Gun Mayhem 3 running under pad2key: the character runs, jumps and fires while the kill feed scrolls" width="520"></p>
 
-真机截图：《混乱大枪战3》（Adobe Flash Player 21）里用左摇杆走位、`X` 跳、`LB` 开火 —— 游戏本身只认键盘，中间没有任何插件或改包。
+真机录屏：《混乱大枪战3》（Adobe Flash Player 21）里用左摇杆走位、`X` 跳、`LB` 开火，右上角击杀提示在滚 —— 游戏本身只认键盘，中间没有任何插件或改包。
 
 ---
 
