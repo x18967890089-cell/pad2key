@@ -84,9 +84,12 @@ jobs:
           if (-not $got) { Write-Host 'could not download SDL2 in 120s'; exit 1 }
           Write-Host ("downloaded {0} bytes" -f (Get-Item $zip).Length)
           Expand-Archive -Path $zip -DestinationPath (Join-Path $env:RUNNER_TEMP 'sdl2') -Force
-          $dll = Get-ChildItem (Join-Path $env:RUNNER_TEMP 'sdl2') -Recurse -Filter SDL2.dll |
-                 Where-Object { $_.FullName -match 'x64' } | Select-Object -First 1
-          if (-not $dll) { Write-Host 'no x64 SDL2.dll inside the archive'; exit 1 }
+          $all = Get-ChildItem (Join-Path $env:RUNNER_TEMP 'sdl2') -Recurse -Filter SDL2.dll
+          $all | ForEach-Object { Write-Host ("found {0} ({1} bytes)" -f $_.FullName, $_.Length) }
+          # prefer the 64-bit build when the archive ships both; the self-test prints which one loaded
+          $dll = $all | Where-Object { $_.FullName -match 'x64' -or $_.FullName -match 'x86_64' } | Select-Object -First 1
+          if (-not $dll) { $dll = $all | Select-Object -First 1 }
+          if (-not $dll) { Write-Host 'no SDL2.dll inside the archive'; exit 1 }
           Copy-Item $dll.FullName (Join-Path $PWD 'SDL2.dll') -Force
           Write-Host ("SDL2.dll: {0} bytes" -f (Get-Item (Join-Path $PWD 'SDL2.dll')).Length)
           exit 0
