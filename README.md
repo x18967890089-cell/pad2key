@@ -4,6 +4,8 @@
 
 > A single-file PowerShell bridge that turns gamepad buttons into key presses for games that only understand a keyboard.
 
+[![ci](https://github.com/x18967890089-cell/pad2key/actions/workflows/ci.yml/badge.svg)](https://github.com/x18967890089-cell/pad2key/actions/workflows/ci.yml)
+
 <p align="center"><img src="docs/screenshot.png" alt="pad2key -SelfTest output: PowerShell 5.1 x64, SDL2 2.32.10, 0 joysticks, waiting for controller" width="720"></p>
 
 `-SelfTest` 的真实输出：不插手柄也能跑，确认 PowerShell 位数、SDL2 版本与连接状态都正常。
@@ -76,6 +78,22 @@ $game = Start-Process .\game.exe -PassThru
 
 四条都排完还是不行，带上 `-SelfTest` 的完整输出开 issue。
 
+## 持续集成（在真实 Windows runner 上跑，不是「理论上能跑」）
+
+每次 push 都会在 `windows-latest` 上真跑一遍，两个 job：
+
+| job | 做什么 | 断言 |
+|---|---|---|
+| `parse + ascii + PSScriptAnalyzer` | Windows PowerShell 5.1 自带的 `Parser.ParseFile` 解析脚本；逐字节检查非 ASCII 字符数为 0；静态分析 | 0 个解析错误、纯 ASCII、`-Severity Error` 无输出 |
+| `-SelfTest with a real SDL2.dll` | 先删掉 `SDL2.dll` 跑一次，再按 README 的方式去 libsdl.org 下载真实 DLL 放回同目录跑一次 | 缺 DLL 退 `3`；装好 DLL 后 `-SelfTest` 退 `0` 且输出含 `SDL2 dir` / `joysticks` / `self-test finished`；不带参数退 `2` |
+
+最近一次全绿：run [42856802953](https://github.com/x18967890089-cell/pad2key/actions/runs/42856802953)。
+
+两条踩过的坑写在这里，省得别人再踩：
+
+- **`SDL2 build` 那行不一定有**。`SDL_GetRevision()` 返回空时脚本会跳过这一行（这正是设计：某些发行包不带 revision 字符串），所以 CI 不能把它当断言针，改断言 `SDL2 dir`。
+- **断言「退出码应该是 3」的步骤末尾必须 `exit 0`**。`$LASTEXITCODE` 会漏到 step 退出码上，日志写着 `missing-dll exit code ok`、GitHub 仍判这一步失败。
+
 ## 在游戏里用（实测：《混乱大枪战3》）
 
 老 Flash 游戏是最典型的「只认键盘」场景，整套流程四步：
@@ -132,7 +150,7 @@ vk 码表见 [Virtual-Key Codes](https://learn.microsoft.com/windows/win32/input
 - **没有配置文件和多套键位**，换游戏就是改代码里的配置区。
 - **仅 Windows**（`user32.dll` + `keybd_event`）。
 - 手柄能不能认，取决于 SDL2 自带的映射库；`-SelfTest` 会打印设备名，认不出就换手柄或换更新的 SDL2。
-- 只在 Windows 11 x64 + PowerShell 5.1 + SDL2 2.32 上实测过，其它环境请开 issue。
+- 在 Windows 11 x64 + PowerShell 5.1（`5.1.26100`）+ SDL2 2.32 上手测；CI 又在 `windows-latest`（PowerShell `5.1.26100.33648`）上复跑过自检，其它环境请开 issue。
 
 退出码：`0` 正常结束 / `1` 90 秒内没找到游戏进程 / `2` 参数不全 / `3` 找不到 `SDL2.dll` / `4` SDL 初始化失败。
 
